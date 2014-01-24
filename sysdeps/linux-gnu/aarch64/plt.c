@@ -34,6 +34,5 @@ sym2addr(struct process *proc, struct library_symbol *sym)
 GElf_Addr
 arch_plt_sym_val(struct ltelf *lte, size_t ndx, GElf_Rela *rela)
 {
-	assert(!"arch_plt_sym_val not implemented");
-	abort();
+	return lte->plt_addr + 32 + ndx * 16;
 }

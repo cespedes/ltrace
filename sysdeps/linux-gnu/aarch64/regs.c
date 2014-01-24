@@ -50,6 +50,17 @@ aarch64_write_gregs(struct process *proc, struct user_pt_regs *regs)
 		? -1 : 0;
 }
 
+int
+aarch64_read_fregs(struct process *proc, struct user_fpsimd_state *regs)
+{
+	*regs = (struct user_fpsimd_state) {};
+	struct iovec iovec;
+	iovec.iov_base = regs;
+	iovec.iov_len = sizeof *regs;
+	return ptrace(PTRACE_GETREGSET, proc->pid, NT_FPREGSET, &iovec) < 0
+		? -1 : 0;
+}
+
 arch_addr_t
 get_instruction_pointer(struct process *proc)
 {
@@ -93,13 +104,27 @@ set_instruction_pointer(struct process *proc, arch_addr_t addr)
 arch_addr_t
 get_stack_pointer(struct process *proc)
 {
-	assert(!"get_stack_pointer not implemented");
-	abort();
+	struct user_pt_regs regs;
+	if (aarch64_read_gregs(proc, &regs) < 0) {
+		fprintf(stderr, "get_stack_pointer: "
+			"Couldn't read registers of %d.\n", proc->pid);
+		return 0;
+	}
+
+	/* XXX double cast */
+	return (arch_addr_t) (uintptr_t) regs.sp;
 }
 
 arch_addr_t
 get_return_addr(struct process *proc, arch_addr_t stack_pointer)
 {
-	assert(!"get_return_addr not implemented");
-	abort();
+	struct user_pt_regs regs;
+	if (aarch64_read_gregs(proc, &regs) < 0) {
+		fprintf(stderr, "get_return_addr: "
+			"Couldn't read registers of %d.\n", proc->pid);
+		return 0;
+	}
+
+	/* XXX double cast */
+	return (arch_addr_t) (uintptr_t) regs.regs[30];
 }
